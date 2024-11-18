@@ -29,6 +29,7 @@ struct AllocateRequest {
 #[derive(Debug, Serialize)]
 enum AllocatorRequest {
     AllocateRequest(AllocateRequest),
+    Verify(),
 }
 
 // Function to return a Vec of futures for tracking transactions
@@ -90,8 +91,8 @@ async fn create_proof_data_account(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = SolanaClient::parse();
     let client = RpcClient::new("https://api.devnet.solana.com".to_string());
-    let stark_proof = &std::fs::read(cli.serialized_proof)?;
-    let allocator_id = Pubkey::from_str("6w9j57UyR8TT9PhtaiRBV4GV99DUjXcDyqVmEde8FHxa").unwrap();
+    let stark_proof = &std::fs::read(cli.serialized_proof)?[..100];
+    let verifier_id = Pubkey::from_str("67PTx15uf3UdbSMFb6mwMBxQPE5GeYEyeEsNQa88TJmS").unwrap();
     let payer = Keypair::read_from_file("/home/bartosz/.config/solana/id.json").unwrap();
 
     let proof_data_account = Keypair::new();
@@ -103,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &payer,
                 &proof_data_account,
                 stark_proof.len(),
-                &allocator_id,
+                &verifier_id,
             )
             .await?,
         )
@@ -117,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .map(|(idx, chunk)| {
                 let i = idx * 500 + index * 10000;
                 Instruction {
-                    program_id: allocator_id,
+                    program_id: verifier_id,
                     accounts: vec![AccountMeta::new(proof_data_account.pubkey(), false)],
                     data: bincode::serialize(&AllocatorRequest::AllocateRequest(AllocateRequest {
                         idx_start: i,
@@ -151,7 +152,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .get_account_data(&proof_data_account.pubkey())
             .await?;
 
-        if data.eq(stark_proof) {
+        if data.eq(&stark_proof) {
             println!("proof_data_account correct!");
             break;
         } else {
@@ -159,6 +160,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             sleep(Duration::from_secs(5));
         }
     }
+
+    let ix = Instruction {
+        program_id: verifier_id,
+        accounts: vec![AccountMeta::new(proof_data_account.pubkey(), false)],
+        data: bincode::serialize(&AllocatorRequest::Verify()).unwrap(),
+    };
+
+    let block_hash = client.get_latest_blockhash().await?;
+    let tx = Transaction::new_signed_with_payer(
+        &[ix],
+        Some(&payer.pubkey()),
+        &[&payer, &proof_data_account],
+        block_hash,
+    );
+
+    let result = client.simulate_transaction(&tx).await?;
+    println!("Simulation result: {:?}", result);
+
+    // client.send_transaction(&tx).await.unwrap();
 
     Ok(())
 }
