@@ -6,9 +6,10 @@ edition = "2021"
 [dependencies]
 bincode = "1.3.3"
 serde = { version = "1.0.210", features = ["derive"] }
-solana-program = { git = "https://github.com/Okm165/solana.git", branch = "fix/deps"}
-swiftness_air = { git = "https://github.com/iosis-tech/swiftness.git", rev = "b78639326e85c8d629c3cdeed4b9eeca29d717dd", default-features = false, features = ["recursive", "keccak_160_lsb", "stone5"] }
-swiftness_stark = { git = "https://github.com/iosis-tech/swiftness.git", rev = "b78639326e85c8d629c3cdeed4b9eeca29d717dd", default-features = false, features = ["recursive", "keccak_160_lsb", "stone5"] }
+solana-program = { git = "https://github.com/anza-xyz/agave", tag = "v2.1.11"}
+
+swiftness_air = { path = "/home/bartosz/workshop/iosis/swiftness/crates/air", default-features = false, features = ["recursive", "keccak_160_lsb", "stone5"] }
+swiftness_stark = { path = "/home/bartosz/workshop/iosis/swiftness/crates/stark", default-features = false, features = ["recursive", "keccak_160_lsb", "stone5"] }
 
 [lib]
 name = "swiftness"

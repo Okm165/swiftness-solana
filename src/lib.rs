@@ -1,14 +1,10 @@
 use serde::Deserialize;
-use solana_program::entrypoint;
 use solana_program::{
     account_info::AccountInfo, entrypoint::ProgramResult, msg, program_error::ProgramError,
     pubkey::Pubkey,
 };
 use swiftness_air::layout::recursive::Layout;
 use swiftness_stark::types::StarkProof as StarkProofVerifier;
-
-// declare and export the program's entrypoint
-entrypoint!(process_instruction);
 
 #[derive(Debug, Deserialize)]
 struct AllocateRequest {
